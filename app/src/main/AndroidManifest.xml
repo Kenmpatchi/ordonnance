@@ -12,6 +12,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Ordonnance">
         <activity
+            android:name=".doctor.doctor_details"
+            android:exported="false" />
+        <activity
             android:name=".patient.Patient"
             android:exported="false" />
         <activity
@@ -22,12 +25,10 @@
             android:exported="false" />
         <activity
             android:name=".register.Register"
-            android:exported="false" >
-
-        </activity>
+            android:exported="false"></activity>
         <activity
             android:name=".login.Login"
-            android:exported="true" >
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -36,9 +37,7 @@
         </activity>
         <activity
             android:name=".MainActivity"
-            android:exported="false">
-
-        </activity>
+            android:exported="false"></activity>
     </application>
 
 </manifest>

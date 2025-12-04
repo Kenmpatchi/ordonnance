@@ -4,10 +4,7 @@ import android.annotation.SuppressLint
 import android.os.Bundle
 import android.widget.ArrayAdapter
 import android.widget.ListView
-import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import com.example.ordonnance.DatabaseHelper
 import com.example.ordonnance.R
 
@@ -22,17 +19,29 @@ class Patient : AppCompatActivity() {
 
         db = DatabaseHelper(this)
 
-        val list = findViewById<ListView>(R.id.prescriptionList)
-        val cursor = db.getClientPrescriptions(3) // replace with logged-in client id
+        // Get logged-in client ID from SharedPreferences
+        val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
+        val userId = prefs.getInt("user_id", -1)
+
+        if (userId == -1) {
+            // Safety check
+            finish()
+            return
+        }
+
+        val listView = findViewById<ListView>(R.id.prescriptionList)
+        val cursor = db.getClientPrescriptions(userId)
 
         val items = ArrayList<String>()
 
         while (cursor.moveToNext()) {
-            val sick = cursor.getString(cursor.getColumnIndex("sickness"))
-            val txt = cursor.getString(cursor.getColumnIndex("prescriptionText"))
-            items.add("Sickness: $sick\nPrescription: $txt")
+            val sickness = cursor.getString(cursor.getColumnIndex("sickness"))
+            val prescriptionText = cursor.getString(cursor.getColumnIndex("prescriptionText"))
+            items.add("Sickness: $sickness\nPrescription: $prescriptionText")
         }
 
-        list.adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, items)
+        cursor.close()
+
+        listView.adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, items)
     }
 }

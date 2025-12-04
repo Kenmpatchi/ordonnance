@@ -15,8 +15,8 @@ class Doctor : AppCompatActivity() {
     lateinit var db: DatabaseHelper
     lateinit var spinner: Spinner
 
-    var clientIds = ArrayList<Int>()   // Store IDs separately
-    var clientNames = ArrayList<String>() // Names for spinner display
+    private val clientIds = ArrayList<Int>()
+    private val clientNames = ArrayList<String>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -28,21 +28,33 @@ class Doctor : AppCompatActivity() {
         loadClientsIntoSpinner()
 
         val sickness = findViewById<EditText>(R.id.sickness)
-        val text = findViewById<EditText>(R.id.prescriptionText)
+        val prescriptionText = findViewById<EditText>(R.id.prescriptionText)
         val sendBtn = findViewById<Button>(R.id.sendBtn)
 
         sendBtn.setOnClickListener {
 
             val selectedIndex = spinner.selectedItemPosition
+            if (selectedIndex < 0 || selectedIndex >= clientIds.size) {
+                Toast.makeText(this, "Please select a client", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
             val clientId = clientIds[selectedIndex]
 
-            val doctorId = 2     // 🔥 Replace this with logged-in doctor ID later
+            // Load doctor ID from SharedPreferences
+            val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
+            val doctorId = prefs.getInt("user_id", -1)
+
+            if (doctorId == -1) {
+                Toast.makeText(this, "Doctor ID not found!", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
 
             val ok = db.insertPrescription(
                 doctorId,
                 clientId,
-                sickness.text.toString(),
-                text.text.toString()
+                sickness.text.toString().trim(),
+                prescriptionText.text.toString().trim()
             )
 
             if (ok)
@@ -52,7 +64,7 @@ class Doctor : AppCompatActivity() {
         }
     }
 
-    fun loadClientsIntoSpinner() {
+    private fun loadClientsIntoSpinner() {
         val cursor = db.getAllClients()
 
         clientIds.clear()
@@ -63,16 +75,16 @@ class Doctor : AppCompatActivity() {
             val name = cursor.getString(1)
 
             clientIds.add(id)
-            clientNames.add("$name")
+            clientNames.add(name)
         }
+
+        cursor.close()
 
         val adapter = ArrayAdapter(
             this,
             android.R.layout.simple_spinner_dropdown_item,
             clientNames
         )
-
         spinner.adapter = adapter
     }
 }
-

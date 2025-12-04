@@ -5,14 +5,12 @@ import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
-import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import com.example.ordonnance.DatabaseHelper
 import com.example.ordonnance.R
 import com.example.ordonnance.admin.Admin
 import com.example.ordonnance.doctor.Doctor
+import com.example.ordonnance.doctor.DoctorDetailsActivity
 import com.example.ordonnance.patient.Patient
 import com.example.ordonnance.register.Register
 
@@ -26,25 +24,59 @@ class Login : AppCompatActivity() {
 
         db = DatabaseHelper(this)
 
-        val username = findViewById<EditText>(R.id.username)
+        val identifier = findViewById<EditText>(R.id.usernameOrEmail)
         val password = findViewById<EditText>(R.id.password)
         val loginBtn = findViewById<Button>(R.id.loginBtn)
-        val registerbtn=findViewById<Button>(R.id.registerRedirectBtn)
+        val registerBtn = findViewById<Button>(R.id.registerRedirectBtn)
 
         loginBtn.setOnClickListener {
-            val user = username.text.toString()
-            val pass = password.text.toString()
+            val idText = identifier.text.toString().trim()
+            val pass = password.text.toString().trim()
 
-            val role = db.login(user, pass)
+            if (idText.isEmpty() || pass.isEmpty()) {
+                Toast.makeText(this, "Please enter username/email and password", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
 
-            when (role) {
-                "admin" -> startActivity(Intent(this, Admin::class.java))
-                "doctor" -> startActivity(Intent(this, Doctor::class.java))
-                "client" -> startActivity(Intent(this, Patient::class.java))
-                else -> Toast.makeText(this, "Invalid login!", Toast.LENGTH_SHORT).show()
+            val role = db.login(idText, pass)
+
+            if (role != null) {
+
+                // Get user ID
+                val userId = db.getUserId(idText)
+
+                // Save to SharedPreferences
+                val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
+                prefs.edit()
+                    .putInt("user_id", userId)
+                    .putString("role", role)
+                    .apply()
+
+                // Redirect based on role
+                when (role) {
+                    "admin" -> startActivity(Intent(this, Admin::class.java))
+
+                    "doctor" -> {
+                        // 🔹 Check if doctor profile is completed
+                        val validated = db.getDoctorProfileValidated(userId)
+                        if (!validated) {
+                            // Redirect to complete doctor profile
+                            startActivity(Intent(this, DoctorDetailsActivity::class.java))
+                        } else {
+                            startActivity(Intent(this, Doctor::class.java))
+                        }
+                    }
+
+                    "client" -> startActivity(Intent(this, Patient::class.java))
+                }
+
+                finish()
+            } else {
+                Toast.makeText(this, "Invalid username/email or password!", Toast.LENGTH_SHORT).show()
             }
         }
-        registerbtn.setOnClickListener {
+
+        registerBtn.setOnClickListener {
             startActivity(Intent(this, Register::class.java))
         }
     }

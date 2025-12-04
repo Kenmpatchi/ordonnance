@@ -3,11 +3,8 @@ package com.example.ordonnance.admin
 import android.os.Bundle
 import android.widget.ArrayAdapter
 import android.widget.ListView
-import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import com.example.ordonnance.DatabaseHelper
 import com.example.ordonnance.R
 
@@ -15,6 +12,9 @@ class Admin : AppCompatActivity() {
 
     lateinit var db: DatabaseHelper
     lateinit var list: ListView
+
+    private val userIds = ArrayList<Int>()
+    private val userDisplay = ArrayList<String>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -26,29 +26,36 @@ class Admin : AppCompatActivity() {
         loadUsers()
     }
 
-    fun loadUsers() {
+    private fun loadUsers() {
         val cursor = db.getAllUsers()
-        val users = ArrayList<String>()
+        userIds.clear()
+        userDisplay.clear()
 
         while (cursor.moveToNext()) {
-            val id = cursor.getInt(0)
-            val username = cursor.getString(1)
-            val role = cursor.getString(3)
-            users.add("$id | $username | $role")
+            val id = cursor.getColumnIndex("id").let { if (it != -1) cursor.getInt(it) else -1 }
+            val username = cursor.getColumnIndex("username").let { if (it != -1) cursor.getString(it) else "" }
+            val firstName = cursor.getColumnIndex("firstName").let { if (it != -1) cursor.getString(it) else "" }
+            val lastName = cursor.getColumnIndex("lastName").let { if (it != -1) cursor.getString(it) else "" }
+            val email = cursor.getColumnIndex("email").let { if (it != -1) cursor.getString(it) else "" }
+            val role = cursor.getColumnIndex("role").let { if (it != -1) cursor.getString(it) else "unknown" }
+
+            userIds.add(id)
+            userDisplay.add("$id | $username | $firstName $lastName | $email | $role")
         }
 
-        val adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, users)
+
+        cursor.close()
+
+        val adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, userDisplay)
         list.adapter = adapter
 
         list.setOnItemClickListener { _, _, position, _ ->
-            val userRow = users[position]
-            val id = userRow.split(" | ")[0].toInt()
-
+            val id = userIds[position]
             showRoleDialog(id)
         }
     }
 
-    fun showRoleDialog(userId: Int) {
+    private fun showRoleDialog(userId: Int) {
         val roles = arrayOf("admin", "doctor", "client")
 
         AlertDialog.Builder(this)
